@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { products, categories, Product } from '@/data/productsData';
@@ -10,28 +10,35 @@ export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('featured');
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const data = localStorage.getItem('userData');
+    if (data) {
+      try {
+        setUserProfile(JSON.parse(data));
+      } catch (error) {
+        console.error('Failed to parse user profile from localStorage', error);
+      }
+    }
+  }, []);
 
   // AI Recommendation Logic
   const calculateAIScore = (product: Product) => {
     let score = 70;
     
-    // Check user's stored interests from localStorage
-    const userData = localStorage.getItem('userData');
-    if (userData) {
-      const user = JSON.parse(userData);
-      
-      // Match with user's interests
-      if (user.interests && user.interests.length > 0) {
-        const categoryMatch = user.interests.some((interest: string) => 
+    if (userProfile) {
+      if (Array.isArray(userProfile.interests) && userProfile.interests.length > 0) {
+        const categoryMatch = userProfile.interests.some((interest: string) =>
           product.category.toLowerCase().includes(interest.toLowerCase().replace('-tech', ''))
         );
         if (categoryMatch) score += 20;
       }
-      
-      // Match with user's skills
-      if (user.skills && user.skills.length > 0) {
-        const skillMatch = product.tags.some((tag: string) => 
-          user.skills.some((skill: string) => tag.toLowerCase().includes(skill.toLowerCase()))
+
+      if (Array.isArray(userProfile.skills) && userProfile.skills.length > 0) {
+        const skillMatch = product.tags.some((tag: string) =>
+          userProfile.skills.some((skill: string) => tag.toLowerCase().includes(skill.toLowerCase()))
         );
         if (skillMatch) score += 10;
       }
